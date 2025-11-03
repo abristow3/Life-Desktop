@@ -9,8 +9,9 @@ FPS = 120
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
-NUM_DOTS = 13
-NUM_RAYS = 30
+PURPLE = (255, 0, 255)
+NUM_DOTS = 30
+NUM_RAYS = 10
 
 def create_rays() -> list:
     rays = []
@@ -67,8 +68,17 @@ def run() -> None:
         # Now we need to make sure to redraw dots in every frame
         for dot in dots:
             dot.update_position(dt=dt, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
-            pygame.draw.circle(screen, dot.color, dot.center_coords, dot.radius, dot.width)
 
+        # Check if dots collide with any other dots
+        for i in range(len(dots)):
+            for j in range(i + 1, len(dots)):
+                dots[i].detect_collision(dots[j])
+
+        # Draw the dots this frame
+        for dot in dots:
+            pygame.draw.circle(screen, dot.color, dot.center_coords, dot.radius, dot.width)
+            pygame.draw.rect(screen, PURPLE, dot.collision_box, width=1)
+        
         for ray in rays:
             ray.update_position(dt=dt)
             pygame.draw.line(screen, ray.color, (ray.x_poo, ray.y_poo), (ray.x_term, ray.y_term), ray.thickness)
