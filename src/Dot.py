@@ -13,10 +13,10 @@ class Dot:
         self.velocity_x = velocity_x
         self.velocity_y = velocity_y
 
-    def update_position(self, screen_width: int, screen_height: int) -> None:
+    def update_position(self, screen_width: int, screen_height: int, dt: float) -> None:
         self.coord_x, self.coord_y = self.center_coords
-        self.coord_x += self.velocity_x
-        self.coord_y += self.velocity_y
+        self.coord_x += self.velocity_x * dt
+        self.coord_y += self.velocity_y * dt
 
         # Bounce off left and right limits
         if self.coord_x - self.radius <= 0 or self.coord_x + self.radius >= screen_width:
