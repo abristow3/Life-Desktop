@@ -1,95 +1,107 @@
 import pygame
-from Dot import Dot
-from Ray import Ray
 import random
+from Circle import Circle
+from Ray import Ray
 
+# Screen & Game Settings
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 FPS = 120
+
+# Colors
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 PURPLE = (255, 0, 255)
-NUM_DOTS = 30
+
+NUM_CIRCLES = 30
 NUM_RAYS = 10
 
-def create_rays() -> list:
-    rays = []
 
+def create_rays() -> list[Ray]:
+    rays = []
     for _ in range(NUM_RAYS):
-        speed = random.randint(30,60)
+        speed = random.randint(30, 60)
         x_poo = random.randint(0, SCREEN_WIDTH)
         y_poo = random.randint(0, 30)
         x_term = random.randint(0, SCREEN_WIDTH)
         y_term = random.randint(500, SCREEN_HEIGHT)
-
-        ray = Ray(color=BLUE, speed=speed, x_poo=x_poo, y_poo=y_poo, x_term=x_term, y_term=y_term)
+        ray = Ray(color=BLUE, speed=speed, x_poo=x_poo, y_poo=y_poo,
+                  x_term=x_term, y_term=y_term)
         rays.append(ray)
-    
     return rays
 
-def create_dots() -> list:
-    dots = []
-    for _ in range(NUM_DOTS):
-        # Randomly generate X and Y coord within screen dimesnions
-        coord_x = random.randint(0,SCREEN_WIDTH)
-        coord_y = random.randint(0,SCREEN_HEIGHT)
-        radius = random.randint(1,15)
-        x_velocity = random.randint(30,60)
-        y_velocity = random.randint(30,60)
 
-        # Create a dot object
-        dot = Dot(color=RED, coord_x=coord_x, coord_y=coord_y, radius=radius, velocity_x=x_velocity, velocity_y=y_velocity)
-        dots.append(dot)
-
-    return dots
+def create_circles() -> list[Circle]:
+    circles = []
+    for _ in range(NUM_CIRCLES):
+        coord_x = random.randint(0, SCREEN_WIDTH)
+        coord_y = random.randint(0, SCREEN_HEIGHT)
+        radius = random.randint(5, 15)
+        vx = random.randint(30, 60)
+        vy = random.randint(30, 60)
+        circle = Circle(color=RED, coord_x=coord_x, coord_y=coord_y,
+                        radius=radius, velocity_x=vx, velocity_y=vy)
+        circles.append(circle)
+    return circles
 
 
 def run() -> None:
-    dots = []
-    dots = create_dots()
-    rays = []
-    rays = create_rays()
-
     pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Life Sim")
     clock = pygame.time.Clock()
 
-    # Start game loop
+    # Create game objects
+    circles = create_circles()
+    rays = create_rays()
+
     running = True
     while running:
-        # delta time since last frame changes based on FPS to maintain stable object speed
-        dt = clock.tick(FPS) / 1000 
-        
-        # Fill canvas with color
+        dt = clock.tick(FPS) / 1000.0
         screen.fill(WHITE)
 
-        # Now we need to make sure to redraw dots in every frame
-        for dot in dots:
-            dot.update_position(dt=dt, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT)
+        # --- Update positions ---
+        for circle in circles:
+            circle.update_position(screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT, dt=dt)
 
-        # Check if dots collide with any other dots
-        for i in range(len(dots)):
-            for j in range(i + 1, len(dots)):
-                dots[i].detect_collision(dots[j])
-
-        # Draw the dots this frame
-        for dot in dots:
-            pygame.draw.circle(screen, dot.color, dot.center_coords, dot.radius, dot.width)
-            pygame.draw.rect(screen, PURPLE, dot.collision_box, width=1)
-        
         for ray in rays:
             ray.update_position(dt=dt)
-            pygame.draw.line(screen, ray.color, (ray.x_poo, ray.y_poo), (ray.x_term, ray.y_term), ray.thickness)
 
+        # --- Handle collisions between circles ---
+        for i in range(len(circles)):
+            for j in range(i + 1, len(circles)):
+                if circles[i].detect_collision(circles[j]):
+                    circles[i].on_collision(circles[j])
+                    circles[j].on_collision(circles[i])
+
+        # --- Handle collisions between rays and circles ---
+        for ray in rays:
+            for circle in circles:
+                if ray.detect_collision(circle):
+                    ray.on_collision(circle)
+                    circle.on_collision(ray)
+
+        # --- Draw everything ---
+        for circle in circles:
+            circle.draw(screen)
+            # Optionally show bounding box for debugging
+            pygame.draw.rect(screen, PURPLE, circle.collision_box, width=1)
+
+        for ray in rays:
+            ray.draw(screen)
+            pygame.draw.rect(screen, PURPLE, ray.collision_box, width=1)
+
+        # --- Event handling ---
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-    
-        # Repaint entire screen at once
+
+        # --- Refresh screen ---
         pygame.display.flip()
+
     pygame.quit()
+
 
 if __name__ == '__main__':
     run()
